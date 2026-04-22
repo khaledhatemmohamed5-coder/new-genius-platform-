@@ -10,16 +10,16 @@
         :root { --primary: #5d5fef; --bg: #f0f2f5; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
         header { background: #333; color: white; padding: 20px; text-align: center; }
-        .tabs { display: flex; background: #eee; overflow-x: auto; sticky: top; }
-        .tab-btn { background: #eee; border: none; padding: 15px; flex: 1; cursor: pointer; font-weight: bold; }
+        .tabs { display: flex; background: #eee; overflow-x: auto; position: sticky; top: 0; z-index: 100; }
+        .tab-btn { background: #eee; border: none; padding: 15px; flex: 1; cursor: pointer; font-weight: bold; min-width: 100px; }
         .tab-btn.active { background: var(--primary); color: white; }
         .content { padding: 15px; max-width: 800px; margin: auto; }
         .box { background: white; padding: 15px; border-radius: 12px; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; }
         .card { background: #fff; padding: 15px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .accept-btn { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; }
-        .delete-btn { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px; margin-right: 5px; }
+        .accept-btn { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        .delete-btn { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -27,21 +27,21 @@
 <header><h2>إدارة منصة English Genius 👑</h2></header>
 
 <div class="tabs">
-    <button class="tab-btn active" onclick="tab('t1', this)">الطلاب الجدد</button>
+    <button class="tab-btn active" onclick="tab('t1', this)">الطلاب</button>
     <button class="tab-btn" onclick="tab('t2', this)">الفيديوهات</button>
     <button class="tab-btn" onclick="tab('t3', this)">PDF</button>
 </div>
 
 <div class="content">
     <div id="t1" class="box" style="display:block">
-        <h3>الطلاب المسجلين حالياً:</h3>
-        <div id="sl">جاري تحميل الطلاب...</div>
+        <h3>الطلاب المسجلين:</h3>
+        <div id="sl">جاري التحميل...</div>
     </div>
 
     <div id="t2" class="box">
-        <h3>رفع فيديو جديد</h3>
+        <h3>رفع فيديو جديد (ثانوي)</h3>
         <input id="vt" placeholder="عنوان الفيديو">
-        <input id="vl" placeholder="لينك الفيديو (YouTube)">
+        <input id="vl" placeholder="لينك الفيديو">
         <select id="vg">
             <option>الأول الثانوي</option>
             <option>الثاني الثانوي</option>
@@ -51,9 +51,9 @@
     </div>
 
     <div id="t3" class="box">
-        <h3>رفع مذكرة PDF</h3>
+        <h3>رفع مذكرة PDF (ثانوي)</h3>
         <input id="pt" placeholder="اسم المذكرة">
-        <input id="pl" placeholder="لينك جوجل درايف">
+        <input id="pl" placeholder="لينك الملف">
         <select id="pg">
             <option>الأول الثانوي</option>
             <option>الثاني الثانوي</option>
@@ -64,11 +64,13 @@
 </div>
 
 <script>
-    // نظام الحماية من "عبد الله" وأي حد غريب
-    const myPass = prompt("مرحباً مستر خالد.. أدخل كلمة السر للدخول:");
-    if (myPass !== "Khaled@2026") {
-        alert("كلمة سر خاطئة! لن يتم فتح اللوحة.");
-        document.body.innerHTML = "<h1 style='text-align:center; margin-top:50px;'>عفواً.. غير مسموح لك بالدخول ❌</h1>";
+    // نظام التمويه البرمجي - كلمة السر مشفرة
+    const _authData = "aGh5eTA4YXNhcw=="; 
+    const p = prompt("مرحباً مستر خالد.. أدخل كلمة السر للدخول:");
+    
+    if (btoa(p) !== _authData) {
+        alert("كلمة سر خاطئة! لا يمكن الدخول.");
+        document.body.innerHTML = "<h1 style='text-align:center; margin-top:50px;'>❌ دخول غير مسموح به</h1>";
     }
 
     const firebaseConfig = {
@@ -90,12 +92,11 @@
         el.classList.add('active');
     }
 
-    // عرض الطلاب وقبولهم أو حذفهم
     db.ref('students').on('value', snap => {
         const div = document.getElementById('sl'); div.innerHTML = "";
         snap.forEach(c => {
             const s = c.val();
-            const status = s.accepted ? "✅ مقبول" : "⏳ في الانتظار";
+            const status = s.accepted ? "✅ مقبول" : "⏳ انتظار";
             div.innerHTML += `
                 <div class="card">
                     <span><b>${s.name}</b><br><small>${s.grade} - ${status}</small></span>
@@ -107,16 +108,9 @@
         });
     });
 
-    function accept(key) {
-        db.ref('students/' + key).update({ accepted: true }).then(() => alert("تم قبول الطالب بنجاح"));
-    }
-
-    function del(key) {
-        if(confirm("هل أنت متأكد من حذف هذا الطالب؟")) {
-            db.ref('students/' + key).remove();
-        }
-    }
-
+    function accept(key) { db.ref('students/' + key).update({ accepted: true }).then(()=>alert("تم قبول الطالب")); }
+    function del(key) { if(confirm("هل تريد حذف هذا الطالب؟")) db.ref('students/' + key).remove(); }
+    
     function add(path, tId, lId, gId) {
         const title = document.getElementById(tId).value;
         const link = document.getElementById(lId).value;
@@ -128,7 +122,7 @@
                 document.getElementById(lId).value = "";
             });
         } else {
-            alert("يرجى ملء البيانات");
+            alert("يرجى إكمال البيانات");
         }
     }
 </script>
