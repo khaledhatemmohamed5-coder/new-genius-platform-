@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصتي - English Genius</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        :root { --primary: #5d5fef; --bg: #f5f7fb; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 70px; }
+        header { background: white; padding: 15px; display: flex; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .section { padding: 15px; max-width: 600px; margin: auto; display: none; }
+        .active-sec { display: block; }
+        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-right: 5px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; }
+        .nav-item { cursor: pointer; font-size: 12px; color: #888; text-align: center; }
+        .active { color: var(--primary); font-weight: bold; }
+        .btn { display: inline-block; background: var(--primary); color: white; padding: 8px 12px; border-radius: 8px; text-decoration: none; margin-top: 5px; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <header><div style="font-weight:bold; color:var(--primary)">English Genius</div><div id="uName">👤 ..</div></header>
+    
+    <div id="s1" class="section active-sec"><h3>🎥 المحاضرات</h3><div id="lList">..</div></div>
+    <div id="s2" class="section"><h3>📄 المذكرات</h3><div id="pList">..</div></div>
+    <div id="s3" class="section"><h3>📝 الامتحانات</h3><div id="eList">..</div></div>
+    <div id="s4" class="section">
+        <h3>💬 اسأل المستر</h3>
+        <textarea id="qIn" style="width:100%; height:80px; border-radius:10px; border:1px solid #ddd; padding:10px"></textarea>
+        <button onclick="sendQ()" style="width:100%; background:var(--primary); color:white; border:none; padding:10px; border-radius:10px; margin-top:5px">إرسال</button>
+        <div id="myQ"></div>
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="tab('s1',this)">🏠 الرئيسية</div>
+        <div class="nav-item" onclick="tab('s2',this)">📄 المكتبة</div>
+        <div class="nav-item" onclick="tab('s3',this)">📝 امتحانات</div>
+        <div class="nav-item" onclick="tab('s4',this)">💬 أسئلة</div>
+    </div>
+
+<script>
+    const firebaseConfig = { /* بياناتك */
+        apiKey: "AIzaSyA3z8T5rbd5xQdKkCSqwTg-XcL2BTThfRQ",
+        authDomain: "khaled-platform-27373.firebaseapp.com",
+        databaseURL: "https://khaled-platform-27373-default-rtdb.firebaseio.com",
+        projectId: "khaled-platform-27373",
+        storageBucket: "khaled-platform-27373.firebasestorage.app",
+        messagingSenderId: "143088371235",
+        appId: "1:143088371235:web:72959ec1a269c74d389396"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const sid = localStorage.getItem('studentId'), sgrade = localStorage.getItem('studentGrade');
+    if(!sid) location.href='index.html';
+    document.getElementById('uName').innerText = localStorage.getItem('studentName');
+
+    function tab(s, el) {
+        document.querySelectorAll('.section').forEach(x=>x.style.display='none');
+        document.getElementById(s).style.display='block';
+        document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    function load(path, div, type) {
+        db.ref(path).orderByChild('grade').equalTo(sgrade).on('value', snap => {
+            const list = document.getElementById(div); list.innerHTML = "";
+            snap.forEach(c => {
+                const d = c.val();
+                list.innerHTML += `<div class="card"><h4>${d.title}</h4><a href="${d.link}" class="btn" target="_blank">فتح ${type}</a></div>`;
+            });
+        });
+    }
+    load('lessons','lList','الفيديو'); load('pdfs','pList','الملف'); load('exams','eList','الامتحان');
+
+    function sendQ() {
+        const q = document.getElementById('qIn').value;
+        if(q) db.ref('questions').push({sid, name:localStorage.getItem('studentName'), question:q, answer:"جاري الرد.."}).then(()=>alert("تم!"));
+    }
+
+    db.ref('questions').orderByChild('sid').equalTo(sid).on('value', snap => {
+        const div = document.getElementById('myQ'); div.innerHTML = "<h4>ردود المستر:</h4>";
+        snap.forEach(c => {
+            const d = c.val();
+            div.innerHTML += `<div class="card" style="border-right-color:green"><small>${d.question}</small><br><b style="color:green">الرد: ${d.answer}</b></div>`;
+        });
+    });
+</script>
+</body>
+</html>

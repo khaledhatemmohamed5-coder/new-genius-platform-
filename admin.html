@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لوحة التحكم 🛡️</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; }
+        header { background: #333; color: white; padding: 20px; text-align: center; }
+        .tabs { display: flex; background: white; padding: 10px; gap: 5px; overflow-x: auto; }
+        .tab-btn { background: #eee; border: none; padding: 10px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+        .active { background: #5d5fef; color: white; }
+        .content { padding: 15px; max-width: 800px; margin: auto; }
+        .box { background: white; padding: 15px; border-radius: 12px; display: none; }
+        input, select { width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px; border: 1px solid #ddd; }
+        .card { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+    <header><h2>الإدارة 🛡️</h2></header>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="tab('t1',this)">الطلاب</button>
+        <button class="tab-btn" onclick="tab('t2',this)">فيديو</button>
+        <button class="tab-btn" onclick="tab('t3',this)">PDF</button>
+        <button class="tab-btn" onclick="tab('t4',this)">امتحان</button>
+        <button class="tab-btn" onclick="tab('t5',this)">الأسئلة</button>
+    </div>
+
+    <div class="content">
+        <div id="t1" class="box" style="display:block"><h3>الطلاب الجدد</h3><div id="sL"></div></div>
+        
+        <div id="t2" class="box">
+            <h3>رفع فيديو</h3>
+            <input id="vT" placeholder="العنوان"> <input id="vL" placeholder="اللينك">
+            <select id="vG"><option>الأول الإعدادي</option><option>الثاني الإعدادي</option></select>
+            <button onclick="add('lessons','vT','vL','vG')" style="width:100%; background:green; color:white; padding:12px; border:none; border-radius:10px">نشر الفيديو</button>
+        </div>
+
+        <div id="t3" class="box">
+            <h3>رفع PDF</h3>
+            <input id="pT" placeholder="اسم الملزمة"> <input id="pL" placeholder="لينك جوجل درايف">
+            <select id="pG"><option>الأول الإعدادي</option></select>
+            <button onclick="add('pdfs','pT','pL','pG')" style="width:100%; background:blue; color:white; padding:12px; border:none; border-radius:10px">رفع الملف</button>
+        </div>
+
+        <div id="t4" class="box">
+            <h3>رفع امتحان</h3>
+            <input id="eT" placeholder="اسم الامتحان"> <input id="eL" placeholder="لينك Google Form">
+            <select id="eG"><option>الأول الإعدادي</option></select>
+            <button onclick="add('exams','eT','eL','eG')" style="width:100%; background:orange; color:white; padding:12px; border:none; border-radius:10px">نشر الامتحان</button>
+        </div>
+
+        <div id="t5" class="box"><h3>الأسئلة</h3><div id="qL"></div></div>
+    </div>
+
+<script>
+    const firebaseConfig = { /* بياناتك */
+        apiKey: "AIzaSyA3z8T5rbd5xQdKkCSqwTg-XcL2BTThfRQ",
+        authDomain: "khaled-platform-27373.firebaseapp.com",
+        databaseURL: "https://khaled-platform-27373-default-rtdb.firebaseio.com",
+        projectId: "khaled-platform-27373",
+        storageBucket: "khaled-platform-27373.firebasestorage.app",
+        messagingSenderId: "143088371235",
+        appId: "1:143088371235:web:72959ec1a269c74d389396"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function tab(id, el) {
+        document.querySelectorAll('.box').forEach(x=>x.style.display='none');
+        document.getElementById(id).style.display='block';
+        document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    db.ref('students').on('value', snap => {
+        const div = document.getElementById('sL'); div.innerHTML = "";
+        snap.forEach(c => {
+            const s = c.val();
+            div.innerHTML += `<div class="card"><span>${s.name}</span><button onclick="db.ref('students/${c.key}').update({accepted:true})">${s.accepted ? '✅':'قبول'}</button></div>`;
+        });
+    });
+
+    function add(path, tId, lId, gId) {
+        const title=document.getElementById(tId).value, link=document.getElementById(lId).value, grade=document.getElementById(gId).value;
+        if(title && link) db.ref(path).push({title, link, grade}).then(()=>alert("تم النشر!"));
+    }
+
+    db.ref('questions').on('value', snap => {
+        const div = document.getElementById('qL'); div.innerHTML = "";
+        snap.forEach(c => {
+            const q = c.val();
+            div.innerHTML += `<div class="card" style="flex-direction:column">
+                <b>${q.name}: ${q.question}</b>
+                <input id="ans${c.key}" placeholder="اكتب الرد">
+                <button onclick="db.ref('questions/${c.key}').update({answer:document.getElementById('ans${c.key}').value})">رد</button>
+            </div>`;
+        });
+    });
+</script>
+</body>
+</html>
